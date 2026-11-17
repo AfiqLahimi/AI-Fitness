@@ -1,23 +1,39 @@
 /**
- * Exercise media resolution. The studio asks for media by exercise slug and
- * gets back the best available source, in priority order:
- *   1. An explicit entry in video-manifest.json (licensed library / AI-generated clip / embed)
- *   2. A CDN convention: NEXT_PUBLIC_VIDEO_BASE_URL/<slug>.mp4 (and optional .webm)
- *   3. The procedural animated motion guide (always available, rendered in-browser)
- * Swapping or upgrading videos never requires code changes — update the manifest or CDN.
+ * Exercise media resolution. For each exercise slug the app picks the best source:
+ *   1. The runtime video library (data/video-library.json): videos you uploaded on the
+ *      Video Library page, AI clips you generated, or clips fetched with `npm run videos`.
+ *   2. Built-in entries committed in video-manifest.json (e.g. licensed CDN clips or embeds).
+ *   3. A CDN convention: NEXT_PUBLIC_VIDEO_BASE_URL/<slug>.mp4
+ *   4. The animated motion guide (always available, drawn in the browser).
+ * Adding or replacing a video never needs a code change or a rebuild.
  */
-import manifest from "./video-manifest.json";
+import builtIn from "./video-manifest.json";
 
-export type ManifestEntry =
-  | { kind: "video"; sources: { src: string; type: string }[]; poster?: string; credit?: string; license?: string; sourceUrl?: string; aiGenerated?: boolean }
-  | { kind: "embed"; provider: "youtube" | "vimeo"; id: string; credit?: string; license?: string };
+export interface VideoSource { src: string; type: string }
 
+export interface VideoEntry {
+  kind: "video";
+  sources: VideoSource[];
+  poster?: string;
+  /** Optional second clip demonstrating common mistakes. */
+  mistakes?: VideoSource[];
+  credit?: string;
+  license?: string;
+  sourceUrl?: string;
+  aiGenerated?: boolean;
+  generator?: string; // e.g. "Wan 2.2 (local)", "Kling web app"
+  trainer?: string; // fictional trainer id, e.g. "maya"
+  updatedAt?: string;
+}
+
+export type ManifestEntry = VideoEntry | { kind: "embed"; provider: "youtube" | "vimeo"; id: string; credit?: string; license?: string };
+export type VideoLibrary = Record<string, ManifestEntry>;
 export type ExerciseMedia = ManifestEntry | { kind: "motion" };
 
-const MANIFEST = manifest as Record<string, ManifestEntry>;
+export const BUILT_IN = builtIn as VideoLibrary;
 
-export function resolveMedia(slug: string): ExerciseMedia {
-  const entry = MANIFEST[slug];
+export function resolveMedia(slug: string, library: VideoLibrary = {}): ExerciseMedia {
+  const entry = library[slug] ?? BUILT_IN[slug];
   if (entry) return entry;
   const base = process.env.NEXT_PUBLIC_VIDEO_BASE_URL;
   if (base) {

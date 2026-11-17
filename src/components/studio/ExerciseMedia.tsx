@@ -4,29 +4,38 @@ import { useEffect, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
 import type { Exercise } from "@/lib/fitness/exercises";
 import { embedUrl, resolveMedia } from "@/lib/media/provider";
+import { useVideoLibrary } from "@/lib/media/useVideoLibrary";
 import { MotionGuide } from "./MotionGuide";
 
-export function ExerciseMedia({ exercise, playing = true, compact = false, showBadge = true }: { exercise: Exercise; playing?: boolean; compact?: boolean; showBadge?: boolean }) {
-  const media = resolveMedia(exercise.slug);
+export function ExerciseMedia({
+  exercise, playing = true, compact = false, showBadge = true, variant = "demo", controls = false,
+}: { exercise: Exercise; playing?: boolean; compact?: boolean; showBadge?: boolean; variant?: "demo" | "mistakes"; controls?: boolean }) {
+  const library = useVideoLibrary();
+  const resolved = resolveMedia(exercise.slug, library);
+  // The "mistakes" variant only exists as a separately uploaded clip.
+  const media = variant === "mistakes"
+    ? (resolved.kind === "video" && resolved.mistakes?.length ? { ...resolved, sources: resolved.mistakes, poster: undefined } : { kind: "motion" as const })
+    : resolved.kind === "video" && !resolved.sources.length ? { kind: "motion" as const } : resolved;
   const [failed, setFailed] = useState(false);
   const video = useRef<HTMLVideoElement>(null);
 
-  useEffect(() => setFailed(false), [exercise.slug]);
+  const srcKey = media.kind === "video" ? media.sources.map((x) => x.src).join() : media.kind;
+  useEffect(() => setFailed(false), [exercise.slug, srcKey]);
   useEffect(() => {
     const v = video.current;
     if (!v) return;
     if (playing) v.play().catch(() => {});
     else v.pause();
-  }, [playing, exercise.slug]);
+  }, [playing, exercise.slug, srcKey]);
 
   if (media.kind === "video" && !failed) {
     return (
       <div className="relative h-full w-full">
         <video
-          key={exercise.slug}
+          key={srcKey}
           ref={video}
-          className="h-full w-full object-cover"
-          autoPlay muted loop playsInline preload="auto"
+          className={controls ? "h-full w-full bg-black object-contain" : "h-full w-full object-cover"}
+          autoPlay muted loop playsInline preload="auto" controls={controls}
           poster={media.poster}
           onError={() => setFailed(true)}
           aria-label={`${exercise.name} demonstration video`}

@@ -80,3 +80,14 @@ export function rateLimit(key: string, max: number, windowMs: number): boolean {
   b.n++;
   return true;
 }
+
+/**
+ * Who may upload or delete exercise videos. Set ADMIN_EMAILS="you@example.com,coach@example.com".
+ * When ADMIN_EMAILS is empty, any signed-in user may manage videos in development only.
+ */
+export function canManageVideos(user: SessionUser | null): boolean {
+  if (!user) return false;
+  const list = (process.env.ADMIN_EMAILS ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+  if (list.length) return list.includes(user.email.toLowerCase());
+  return process.env.NODE_ENV !== "production";
+}

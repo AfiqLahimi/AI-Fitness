@@ -4,12 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import {
-  ChevronLeft, ChevronRight, Flame, Pause, Play, Plus, RotateCcw, SkipForward, Timer, Repeat, Volume2, VolumeX, X, Check, Trophy, Loader2, Clock, Dumbbell,
+  BookOpen, ChevronLeft, ChevronRight, Flame, Pause, Play, Plus, RotateCcw, SkipForward, Timer, Repeat, Volume2, VolumeX, X, Check, Trophy, Loader2, Clock, Dumbbell,
 } from "lucide-react";
 import type { PlanDay, PlanItem } from "@/lib/fitness/planner";
 import { getExercise, MUSCLE_LABELS, type Exercise } from "@/lib/fitness/exercises";
 import { completeWorkoutAction } from "@/lib/server/actions";
 import { ExerciseMedia } from "./ExerciseMedia";
+import { ExerciseIntro } from "./ExerciseIntro";
 import { Button, Pill, Ring, cx } from "../ui";
 
 type Section = "warmup" | "main" | "cooldown";
@@ -65,6 +66,15 @@ export function WorkoutStudio({ day, date, weightKg }: { day: PlanDay; date: str
   const [tab, setTab] = useState<"how" | "posture" | "mistakes">("how");
   const beep = useBeeper(sound);
 
+  // Learning intro (muscles → technique → video → choose mode) before each main exercise.
+  const [showIntros, setShowIntros] = useState(true);
+  const [introFor, setIntroFor] = useState<number | null>(null);
+  useEffect(() => {
+    try { if (localStorage.getItem("pulse.showIntros") === "0") setShowIntros(false); } catch { /* storage unavailable */ }
+  }, []);
+  const toggleIntros = (v: boolean) => { setShowIntros(v); try { localStorage.setItem("pulse.showIntros", v ? "1" : "0"); } catch { /* ignore */ } };
+  const wantsIntro = (n: number) => showIntros && steps[n]?.section === "main";
+
   // Timer: either running toward `endsAt`, or frozen at `frozen` seconds.
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [frozen, setFrozen] = useState(0);
@@ -113,7 +123,9 @@ export function WorkoutStudio({ day, date, weightKg }: { day: PlanDay; date: str
     const n = Math.max(0, Math.min(steps.length - 1, i));
     setIdx(n); setSetNo(Math.min(steps[n].item.sets, (done[n] ?? 0) + 1)); setReps(0);
     setPhase("ready"); stopTimer(steps[n].item.mode === "time" ? steps[n].item.seconds : 0); setTab("how");
-  }, [steps, done]);
+    setIntroFor(wantsIntro(n) && (done[n] ?? 0) === 0 ? n : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [steps, done, showIntros]);
 
   const finish = () => { stopTimer(); setPhase("done"); };
 
@@ -139,11 +151,20 @@ export function WorkoutStudio({ day, date, weightKg }: { day: PlanDay; date: str
     } else {
       const n = idx + 1;
       setIdx(n); setSetNo(1); setReps(0); setTab("how");
-      if (modes[n] === "time") { setPhase("countdown"); startTimer(3); }
+      if (wantsIntro(n)) { setIntroFor(n); setPhase("ready"); stopTimer(steps[n].item.seconds); }
+      else if (modes[n] === "time") { setPhase("countdown"); startTimer(3); }
       else { setPhase("work"); stopTimer(); }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setNo, totalSets, mode, idx, modes]);
+  }, [setNo, totalSets, mode, idx, modes, showIntros]);
+
+  const startFromIntro = (m: "reps" | "time") => {
+    setModes((ms) => ms.map((v, i) => (i === idx ? m : v)));
+    setIntroFor(null);
+    begin();
+    if (m === "time") { setPhase("countdown"); startTimer(3); }
+    else { setPhase("work"); stopTimer(); }
+  };
 
   // Timer reached zero → advance the state machine. Beep on the last 3 seconds.
   const lastBeep = useRef(-1);
@@ -189,7 +210,7 @@ export function WorkoutStudio({ day, date, weightKg }: { day: PlanDay; date: str
   // Keyboard shortcuts: Space = primary action, ←/→ = previous/next exercise, P = pause.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement)?.tagName === "INPUT" || phase === "done") return;
+      if ((e.target as HTMLElement)?.tagName === "INPUT" || phase === "done" || introFor !== null) return;
       if (e.key === "ArrowRight") goTo(idx + 1);
       else if (e.key === "ArrowLeft") goTo(idx - 1);
       else if (e.key.toLowerCase() === "p") togglePauseWorkout();
@@ -243,10 +264,25 @@ export function WorkoutStudio({ day, date, weightKg }: { day: PlanDay; date: str
           <span className="inline-flex items-center gap-1.5 text-dim"><Clock className="h-4 w-4" />{fmt(elapsedSec)}</span>
           <span className="inline-flex items-center gap-1.5 text-dim" title="Estimated calories burned (based on exercise METs and your body weight)"><Flame className="h-4 w-4 text-amber" />≈{Math.round(kcal.current)} kcal <span className="text-[10px] text-mute">est.</span></span>
         </div>
+        {introFor === null && (
+          <button onClick={() => { if (running && phase === "work") timerPause(); setIntroFor(idx); }} className="hidden h-10 items-center gap-1.5 rounded-full bg-white/5 px-3.5 text-sm text-dim hover:text-fg sm:inline-flex" aria-label="Learn this exercise">
+            <BookOpen className="h-4 w-4" /> Learn
+          </button>
+        )}
         <button onClick={() => setSound((s) => !s)} className="grid h-10 w-10 place-items-center rounded-full bg-white/5 text-dim hover:text-fg" aria-label={sound ? "Mute sounds" : "Unmute sounds"}>{sound ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}</button>
         <Button variant="secondary" size="sm" onClick={togglePauseWorkout}>{paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}<span className="hidden sm:inline">{paused ? "Resume" : "Pause"}</span></Button>
       </header>
 
+      {introFor === idx ? (
+        <ExerciseIntro
+          key={step.ex.slug}
+          exercise={step.ex} item={step.item}
+          position={steps.filter((s) => s.section === "main").indexOf(step) + 1 || idx + 1}
+          total={steps.filter((s) => s.section === "main").length || steps.length}
+          defaultMode={mode} onStart={startFromIntro} onSkip={() => setIntroFor(null)}
+          showIntros={showIntros} onToggleIntros={toggleIntros}
+        />
+      ) : (
       <div className="grid flex-1 gap-4 px-4 pb-4 md:px-6 lg:grid-cols-[1fr_380px] lg:gap-6 lg:pb-6">
         {/* Stage */}
         <section className="flex min-w-0 flex-col gap-4">
@@ -389,6 +425,7 @@ export function WorkoutStudio({ day, date, weightKg }: { day: PlanDay; date: str
           )}
         </aside>
       </div>
+      )}
     </div>
   );
 }

@@ -9,7 +9,8 @@
  *   node scripts/fetch-videos.mjs --remove push-up                   # go back to the animated guide
  *   ... --force                                                       # re-download even if present
  *
- * Files are saved to public/videos/<slug>.mp4 and registered in src/lib/media/video-manifest.json.
+ * Files are saved to data/videos/<slug>.mp4 and registered in data/video-library.json
+ * (the same library the Video Library page uploads into).
  * Search results are not always the exact exercise: open /library and check every clip.
  * Anything you don't like, replace with --pick or --remove.
  */
@@ -29,8 +30,8 @@ for (const f of [".env.local", ".env"]) {
     }
   } catch { /* file not present */ }
 }
-const MANIFEST = path.join(ROOT, "src/lib/media/video-manifest.json");
-const OUT = path.join(ROOT, "public/videos");
+const MANIFEST = path.join(ROOT, "data/video-library.json");
+const OUT = path.join(ROOT, "data/videos");
 
 // Search terms tuned per exercise (Pexels search is keyword based).
 const QUERIES = {
@@ -88,8 +89,9 @@ async function install(slug, video, manifest) {
   if (video.image) await download(video.image, path.join(OUT, `${slug}.jpg`)).catch(() => {});
   manifest[slug] = {
     kind: "video",
-    sources: [{ src: `/videos/${slug}.mp4`, type: "video/mp4" }],
-    poster: video.image ? `/videos/${slug}.jpg` : undefined,
+    sources: [{ src: `/media/videos/${slug}.mp4`, type: "video/mp4" }],
+    poster: video.image ? `/media/videos/${slug}.jpg` : undefined,
+    mistakes: manifest[slug]?.mistakes,
     credit: `${video.user?.name ?? "Unknown"} on Pexels`,
     license: "Pexels License",
     sourceUrl: video.url,

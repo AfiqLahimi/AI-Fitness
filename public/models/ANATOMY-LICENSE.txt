@@ -1,0 +1,15 @@
+anatomy.glb — 3D human muscle and bone model used for muscle highlighting.
+
+Derived from:
+  "Z-Anatomy - The libre 3D atlas of anatomy" — CC BY-SA 4.0
+  https://github.com/Z-Anatomy/Models-of-human-anatomy
+which is based on:
+  "BodyParts3D - The Database Center for Life Science" — CC BY-SA 2.1 Japan
+  https://dbarchive.biosciencedbc.jp/en/bodyparts3d/
+
+Changes: muscles (skeletal muscular system) and major bones were extracted, reduced in
+polygon count and compressed for the web (scripts/anatomy/). Materials were removed.
+
+This derived model (anatomy.glb) is licensed under CC BY-SA 4.0:
+https://creativecommons.org/licenses/by-sa/4.0/
+If you share or modify this file, you must give the same attribution and keep this licence.

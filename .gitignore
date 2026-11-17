@@ -6,3 +6,8 @@ node_modules
 .env.local
 next-env.d.ts
 *.tsbuildinfo
+
+# Local exercise video library (large files; keep them on your computer)
+data/videos/*
+!data/videos/.gitkeep
+data/video-library.json

@@ -6,6 +6,10 @@ import { EQUIPMENT_LABELS } from "@/lib/fitness/types";
 import { ExerciseMedia } from "./studio/ExerciseMedia";
 import { Pill, cx } from "./ui";
 import { X } from "lucide-react";
+import { AnatomyViewerLazy } from "./anatomy/AnatomyViewerLazy";
+import { MuscleTargets } from "./anatomy/MuscleTargets";
+import { targetsFor } from "@/lib/anatomy/muscles";
+import { GUIDES } from "@/lib/anatomy/guides";
 
 const FILTERS = ["all", "strength", "core", "cardio", "warmup", "cooldown"] as const;
 
@@ -56,9 +60,17 @@ export function ExerciseSheet({ exercise: e, onClose }: { exercise: Exercise; on
           <ExerciseMedia exercise={e} />
           <button onClick={onClose} className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-black/60 text-fg backdrop-blur" aria-label="Close"><X className="h-5 w-5" /></button>
         </div>
+        <div className="grid gap-5 border-b border-line p-6 md:grid-cols-[1.2fr_1fr]">
+          <AnatomyViewerLazy targets={targetsFor(e.slug)} className="h-[380px] md:h-[440px]" />
+          <div>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-mute">Muscles worked</p>
+            <MuscleTargets targets={targetsFor(e.slug)} />
+          </div>
+        </div>
         <div className="grid gap-6 p-6 md:grid-cols-[1.3fr_1fr]">
           <div>
             <h2 className="font-display text-2xl font-bold">{e.name}</h2>
+            {GUIDES[e.slug] && <p className="mt-2 text-sm text-dim">{GUIDES[e.slug].what} {GUIDES[e.slug].why}</p>}
             <div className="mt-2 flex flex-wrap gap-1.5">
               {e.primary.map((m) => <Pill key={m} tone="lime">{MUSCLE_LABELS[m]}</Pill>)}
               {e.secondary.map((m) => <Pill key={m}>{MUSCLE_LABELS[m]}</Pill>)}

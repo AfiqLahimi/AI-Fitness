@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Gauge, LineChart, LogOut, MessageCircle, Salad, UserRound, Library } from "lucide-react";
+import { CalendarDays, Gauge, LineChart, LogOut, MessageCircle, Salad, UserRound, Library, Film } from "lucide-react";
 import { Logo, cx } from "./ui";
 import { logoutAction } from "@/lib/server/actions";
 
@@ -28,6 +28,7 @@ export function AppNav({ name }: { name: string }) {
             </Link>
           ))}
           <Link href="/library" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-dim transition hover:bg-white/[0.03] hover:text-fg"><Library className="h-[18px] w-[18px]" />Exercise library</Link>
+          <Link href="/app/videos" className={cx("flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition", active("/app/videos") ? "bg-white/[0.06] text-fg" : "text-dim hover:bg-white/[0.03] hover:text-fg")}><Film className={cx("h-[18px] w-[18px]", active("/app/videos") && "text-lime")} />Video library</Link>
         </nav>
         <div className="mt-auto space-y-1">
           <Link href="/app/profile" className={cx("flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition", active("/app/profile") ? "bg-white/[0.06] text-fg" : "text-dim hover:text-fg")}>
