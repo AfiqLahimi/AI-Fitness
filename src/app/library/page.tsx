@@ -16,7 +16,7 @@ export default function LibraryPage() {
       <div className="mb-8 mt-6">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-mute">Exercise library</p>
         <h1 className="mt-2 font-display text-4xl font-bold tracking-tight md:text-5xl">{EXERCISES.length} coached movements</h1>
-        <p className="mt-3 max-w-2xl text-dim">Every movement comes with a demonstration, target muscles, step-by-step cues and the mistakes to avoid.</p>
+        <p className="mt-3 max-w-2xl text-dim">Every movement shows the exact muscles it works on a real 3D anatomy model, with step-by-step cues and the mistakes to avoid. Exercises with a trainer video play it here too.</p>
       </div>
       <LibraryGrid />
     </main>

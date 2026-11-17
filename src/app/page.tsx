@@ -31,7 +31,7 @@ export default async function Landing() {
             Train with a coach<br />that <span className="text-gradient-lime">knows you.</span>
           </h1>
           <p className="mt-6 max-w-xl text-lg text-dim">
-            A plan built from your body, goal and equipment. A guided workout studio with live demonstrations, rest timers and rep tracking. Malaysian-friendly meal plans. And an AI coach that reads your actual progress.
+            A plan built from your body, goal and equipment. A guided workout studio with 3D muscle anatomy, trainer videos from your library, rest timers and rep tracking. Malaysian-friendly meal plans. And an AI coach that reads your actual progress.
           </p>
           <div className="mt-9 flex flex-wrap gap-3">
             <ButtonLink href={user ? "/app" : "/signup"} size="lg">Build my plan <ArrowRight className="h-5 w-5" /></ButtonLink>
@@ -70,7 +70,7 @@ export default async function Landing() {
         <div className="grid gap-4 md:grid-cols-3">
           <Feature icon={<CalendarDays className="h-5 w-5" />} title="A plan that adapts" body="Weekly split, sets, reps and rest chosen for your goal and equipment. Tell us how a session felt and difficulty adjusts automatically." />
           <Feature icon={<Repeat className="h-5 w-5" />} title="Rep mode or timer mode" body="Count reps and tap through sets, or train against the clock with start, pause, resume and guided rest countdowns." />
-          <Feature icon={<Timer className="h-5 w-5" />} title="Coached every set" body="Target muscles, step-by-step cues, posture checkpoints and the mistakes to avoid — right next to the demonstration." />
+          <Feature icon={<Timer className="h-5 w-5" />} title="Coached every set" body="Target muscles, step-by-step cues, posture checkpoints and the mistakes to avoid — shown on a real 3D anatomy model before every exercise." />
           <Feature icon={<Salad className="h-5 w-5" />} title="Malaysian-first nutrition" body="Nasi lemak, chicken rice, roti canai, ikan bakar and more — with calorie and macro estimates, halal filters and sensible swaps." />
           <Feature icon={<LineChart className="h-5 w-5" />} title="See your progress" body="Weight and BMI trends, workout consistency, calories and protein — all in one dashboard." />
           <Feature icon={<MessageCircle className="h-5 w-5" />} title="An AI coach with context" body="Ask anything. Answers use your real profile, plan, workouts and food log — and never push crash diets." />

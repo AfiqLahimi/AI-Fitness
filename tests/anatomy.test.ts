@@ -30,3 +30,8 @@ test("bicep curl highlights biceps as primary and brachialis/brachioradialis as 
   assert.equal(h.get("Brachioradialis muscle"), 1);
   assert.equal(h.get("Gluteus maximus muscle"), undefined);
 });
+
+test("every exercise has a rendered anatomy thumbnail for cards", async () => {
+  const { existsSync } = await import("node:fs");
+  for (const e of EXERCISES) assert.ok(existsSync(`public/anatomy-thumbs/${e.slug}.jpg`), `missing thumbnail for ${e.slug}`);
+});

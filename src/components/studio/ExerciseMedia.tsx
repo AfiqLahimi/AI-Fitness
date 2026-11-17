@@ -1,77 +1,75 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { VideoOff } from "lucide-react";
 import type { Exercise } from "@/lib/fitness/exercises";
 import { embedUrl, resolveMedia } from "@/lib/media/provider";
 import { useVideoLibrary } from "@/lib/media/useVideoLibrary";
-import { MotionGuide } from "./MotionGuide";
+import { targetsFor } from "@/lib/anatomy/muscles";
+import { AnatomyViewerLazy } from "../anatomy/AnatomyViewerLazy";
+import { VideoPlayer } from "./VideoPlayer";
 
+/**
+ * Shows an exercise's demonstration video when one exists in the video library.
+ * When there is no video, it NEVER fakes one: large views show the real 3D anatomy
+ * model with the target muscles highlighted, small cards show a rendered still of that
+ * model, and both say clearly that no video has been added yet.
+ */
 export function ExerciseMedia({
   exercise, playing = true, compact = false, showBadge = true, variant = "demo", controls = false,
 }: { exercise: Exercise; playing?: boolean; compact?: boolean; showBadge?: boolean; variant?: "demo" | "mistakes"; controls?: boolean }) {
   const library = useVideoLibrary();
   const resolved = resolveMedia(exercise.slug, library);
-  // The "mistakes" variant only exists as a separately uploaded clip.
   const media = variant === "mistakes"
-    ? (resolved.kind === "video" && resolved.mistakes?.length ? { ...resolved, sources: resolved.mistakes, poster: undefined } : { kind: "motion" as const })
-    : resolved.kind === "video" && !resolved.sources.length ? { kind: "motion" as const } : resolved;
-  const [failed, setFailed] = useState(false);
-  const video = useRef<HTMLVideoElement>(null);
-
+    ? (resolved.kind === "video" && resolved.mistakes?.length ? { ...resolved, sources: resolved.mistakes, poster: undefined } : { kind: "none" as const })
+    : resolved.kind === "video" && !resolved.sources.length ? { kind: "none" as const }
+    : resolved;
   const srcKey = media.kind === "video" ? media.sources.map((x) => x.src).join() : media.kind;
+  const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [exercise.slug, srcKey]);
-  useEffect(() => {
-    const v = video.current;
-    if (!v) return;
-    if (playing) v.play().catch(() => {});
-    else v.pause();
-  }, [playing, exercise.slug, srcKey]);
 
   if (media.kind === "video" && !failed) {
+    const credit = showBadge ? [media.aiGenerated ? "AI-generated demo" : null, media.credit].filter(Boolean).join(" · ") || undefined : undefined;
     return (
-      <div className="relative h-full w-full">
-        <video
-          key={srcKey}
-          ref={video}
-          className={controls ? "h-full w-full bg-black object-contain" : "h-full w-full object-cover"}
-          autoPlay muted loop playsInline preload="auto" controls={controls}
-          poster={media.poster}
-          onError={() => setFailed(true)}
-          aria-label={`${exercise.name} demonstration video`}
-        >
-          {media.sources.map((s) => <source key={s.src} src={s.src} type={s.type} onError={(e) => { if (e.currentTarget === e.currentTarget.parentElement?.lastElementChild) setFailed(true); }} />)}
-        </video>
-        {showBadge && (media.credit || media.aiGenerated) && (
-          <span className="absolute bottom-3 left-3 rounded-full bg-black/60 px-2.5 py-1 text-[11px] text-dim backdrop-blur">
-            {media.aiGenerated ? "AI-generated demo" : "Video"}{media.credit ? ` · ${media.credit}` : ""}
-          </span>
-        )}
-      </div>
+      <VideoPlayer
+        sources={media.sources} poster={media.poster} playing={playing} label={`${exercise.name} demonstration video`}
+        credit={credit} minimal={compact || !controls} onError={() => setFailed(true)}
+      />
     );
   }
 
   if (media.kind === "embed" && !failed) {
     return (
-      <iframe
-        className="h-full w-full"
-        src={embedUrl(media)}
-        title={`${exercise.name} demonstration`}
-        allow="autoplay; encrypted-media; picture-in-picture"
-        referrerPolicy="strict-origin-when-cross-origin"
-        loading="lazy"
-      />
+      <iframe className="h-full w-full" src={embedUrl(media)} title={`${exercise.name} demonstration`}
+        allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerPolicy="strict-origin-when-cross-origin" loading="lazy" />
     );
   }
 
+  // No video available.
+  if (compact) {
+    return (
+      <div className="relative h-full w-full bg-[#0b0b0d]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`/anatomy-thumbs/${exercise.slug}.jpg`} alt={`Muscles worked in ${exercise.name}`} className="h-full w-full object-cover" loading="lazy" />
+        {showBadge && <NoVideoBadge small />}
+      </div>
+    );
+  }
   return (
     <div className="relative h-full w-full">
-      <MotionGuide exercise={exercise} playing={playing} compact={compact} />
-      {showBadge && (
-        <span className="absolute bottom-3 right-3 hidden items-center gap-1.5 sm:inline-flex rounded-full border border-white/10 bg-black/50 px-2.5 py-1 text-[11px] text-dim backdrop-blur">
-          <Sparkles className="h-3 w-3 text-lime" /> Animated motion guide · working muscles highlighted
-        </span>
-      )}
+      <AnatomyViewerLazy targets={targetsFor(exercise.slug)} className="h-full w-full rounded-none border-0" compact />
+      {showBadge && <NoVideoBadge mistakes={variant === "mistakes"} />}
     </div>
+  );
+}
+
+function NoVideoBadge({ small = false, mistakes = false }: { small?: boolean; mistakes?: boolean }) {
+  return (
+    <span className={small
+      ? "absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-black/65 px-2 py-0.5 text-[10px] text-white/75 backdrop-blur"
+      : "pointer-events-none absolute left-1/2 top-14 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-amber/30 bg-black/70 px-3 py-1.5 text-xs text-amber backdrop-blur"}>
+      <VideoOff className={small ? "h-3 w-3" : "h-3.5 w-3.5"} />
+      {small ? "No video yet" : mistakes ? "No mistakes video yet — showing muscles worked" : "No demonstration video yet — showing muscles worked"}
+    </span>
   );
 }

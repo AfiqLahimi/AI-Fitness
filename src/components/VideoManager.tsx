@@ -17,7 +17,7 @@ export function VideoManager({ canManage }: { canManage: boolean }) {
   const [open, setOpen] = useState<Exercise | null>(null);
   const status = (slug: string) => {
     const m = resolveMedia(slug, library);
-    return { video: m.kind !== "motion" && !(m.kind === "video" && !m.sources.length), mistakes: m.kind === "video" && !!m.mistakes?.length, media: m };
+    return { video: m.kind !== "none" && !(m.kind === "video" && !m.sources.length), mistakes: m.kind === "video" && !!m.mistakes?.length, media: m };
   };
   const done = EXERCISES.filter((e) => status(e.slug).video).length;
   const list = EXERCISES.filter((e) => (filter === "all" ? true : filter === "done" ? status(e.slug).video : !status(e.slug).video));
@@ -25,7 +25,7 @@ export function VideoManager({ canManage }: { canManage: boolean }) {
   return (
     <>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-dim"><span className="font-semibold text-fg tabular">{done} / {EXERCISES.length}</span> exercises have a real demonstration video. The rest use the animated guide until you add one.</p>
+        <p className="text-sm text-dim"><span className="font-semibold text-fg tabular">{done} / {EXERCISES.length}</span> exercises have a real demonstration video. The rest show the 3D muscle model (and a clear "no video yet" label) until you add one.</p>
         <div className="flex gap-1.5">
           {(["missing", "done", "all"] as Filter[]).map((f) => (
             <button key={f} onClick={() => setFilter(f)} className={cx("rounded-full px-4 py-2 text-sm transition", filter === f ? "bg-lime font-semibold text-lime-ink" : "bg-white/5 text-dim hover:text-fg")}>
@@ -43,7 +43,7 @@ export function VideoManager({ canManage }: { canManage: boolean }) {
               <div className="aspect-video bg-ink"><ExerciseMedia exercise={e} compact showBadge={false} playing={false} /></div>
               <div className="flex items-center justify-between gap-2 p-3.5">
                 <span className="truncate text-sm font-semibold">{e.name}</span>
-                {st.video ? <Pill tone="lime"><Film className="h-3 w-3" />Video{st.mistakes ? " + mistakes" : ""}</Pill> : <Pill>Animated only</Pill>}
+                {st.video ? <Pill tone="lime"><Film className="h-3 w-3" />Video{st.mistakes ? " + mistakes" : ""}</Pill> : <Pill tone="amber">No video yet</Pill>}
               </div>
             </button>
           );
@@ -100,7 +100,7 @@ function VideoSheet({ exercise: e, canManage, onClose }: { exercise: Exercise; c
             </div>
             <p className="text-xs text-mute">
               {tab === "demo"
-                ? hasDemo ? `Real video${media.kind === "video" && media.aiGenerated ? " (AI-generated)" : ""}${media.kind === "video" && media.credit ? ` · ${media.credit}` : ""}${media.kind === "video" && media.license ? ` · ${media.license}` : ""}` : "No video yet — the app shows the animated guide instead."
+                ? hasDemo ? `Real video${media.kind === "video" && media.aiGenerated ? " (AI-generated)" : ""}${media.kind === "video" && media.credit ? ` · ${media.credit}` : ""}${media.kind === "video" && media.license ? ` · ${media.license}` : ""}` : "No video yet. Until you add one, the app shows the 3D muscle model and says that no video exists."
                 : hasMistakes ? "Mistakes clip uploaded." : "Optional. Without it, the app lists the common mistakes as text."}
             </p>
             {canManage && ((tab === "demo" && hasDemo && media.kind === "video") || (tab === "mistakes" && hasMistakes)) && (

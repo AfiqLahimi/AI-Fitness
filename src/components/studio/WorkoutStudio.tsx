@@ -293,15 +293,12 @@ export function WorkoutStudio({ day, date, weightKg }: { day: PlanDay; date: str
               </motion.div>
             </AnimatePresence>
 
-            <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-4 md:p-6">
-              <div className="flex flex-wrap gap-2">
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-5 pt-20 md:p-8 md:pt-24">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
                 <Pill tone={step.section === "main" ? "lime" : "sky"}>{SECTION_LABEL[step.section]}</Pill>
                 <Pill className="capitalize">{step.ex.difficulty}</Pill>
+                <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-xs tabular text-dim">{idx + 1} / {steps.length}</span>
               </div>
-              <span className="glass rounded-full px-3 py-1 text-xs tabular text-dim">{idx + 1} / {steps.length}</span>
-            </div>
-
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-5 pt-20 md:p-8 md:pt-24">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lime">Set {setNo} of {totalSets}{step.ex.unilateral ? " · each side" : ""}</p>
               <h1 className="mt-1 font-display text-3xl font-bold tracking-tight md:text-5xl">{step.ex.name}</h1>
               <p className="mt-2 text-sm text-dim">{step.ex.primary.map((m) => MUSCLE_LABELS[m]).join(" · ")}{step.ex.secondary.length ? <span className="text-mute"> + {step.ex.secondary.map((m) => MUSCLE_LABELS[m]).join(", ")}</span> : null}</p>

@@ -20,8 +20,8 @@ test("every exercise has a beginner explanation", () => {
   for (const e of EXERCISES) assert.ok(GUIDES[e.slug]?.what && GUIDES[e.slug]?.why, e.slug);
 });
 
-test("media resolution prefers the runtime library and falls back to the motion guide", () => {
-  assert.equal(resolveMedia("push-up", {}).kind, "motion");
+test("media resolution prefers the runtime library and returns none when there is no video", () => {
+  assert.equal(resolveMedia("push-up", {}).kind, "none");
   const lib = { "push-up": { kind: "video" as const, sources: [{ src: "/media/videos/push-up.mp4", type: "video/mp4" }] } };
   const m = resolveMedia("push-up", lib);
   assert.equal(m.kind, "video");

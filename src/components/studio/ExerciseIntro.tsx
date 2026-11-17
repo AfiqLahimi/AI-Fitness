@@ -69,7 +69,7 @@ export function ExerciseIntro({
                 <AnatomyViewerLazy targets={targets} className="h-[420px] lg:h-full lg:min-h-[540px]" />
                 <div className="card p-5 md:p-6">
                   <p className="mb-1 font-display text-xl font-semibold">{targets.stretch ? "What this stretches" : "What this works"}</p>
-                  <p className="mb-5 text-sm text-dim">Red muscles do most of the work; orange muscles help. Drag the model to rotate it, use X-ray to see deeper muscles.</p>
+                  <p className="mb-5 text-sm text-dim">Glowing green muscles do most of the work; amber muscles help. Drag the model to rotate it, use X-ray to see deeper muscles.</p>
                   <MuscleTargets targets={targets} />
                 </div>
               </div>
@@ -118,8 +118,18 @@ export function ExerciseIntro({
                       ))}
                     </div>
                   )}
-                  <div className="aspect-video overflow-hidden rounded-[1.5rem] border border-line bg-[radial-gradient(ellipse_at_top,#17191a,#060607)]">
-                    <ExerciseMedia exercise={e} variant={videoTab} controls={hasVideo} />
+                  <div className="aspect-video overflow-hidden rounded-[1.5rem] border border-line bg-[radial-gradient(ellipse_at_top,#17191a,#060607)] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.9)]">
+                    {hasVideo ? (
+                      <ExerciseMedia exercise={e} variant={videoTab} controls />
+                    ) : (
+                      <div className="grid h-full place-items-center p-8 text-center">
+                        <div className="max-w-md">
+                          <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-amber/10 text-amber"><Film className="h-6 w-6" /></span>
+                          <p className="mt-4 font-display text-xl font-semibold">No demonstration video yet</p>
+                          <p className="mt-2 text-sm text-dim">This exercise doesn&apos;t have a trainer video in your library, and we won&apos;t show a fake one. Follow the written steps and the muscle model from step 1, or add a real video in <b className="text-fg">Video library</b>.</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="card space-y-4 p-5">
@@ -128,7 +138,7 @@ export function ExerciseIntro({
                   ) : (
                     <p className="flex gap-2 rounded-xl border border-amber/30 bg-amber/10 p-3 text-sm text-amber">
                       <Info className="mt-0.5 h-4 w-4 shrink-0" />
-                      <span>No demonstration video has been added for this exercise yet, so you&apos;re seeing the animated motion guide. Add a real or AI-generated video in <b>Video library</b>.</span>
+                      <span>No demonstration video has been added for this exercise yet. Add a real, licensed or AI-generated trainer video in <b>Video library</b> and it will play here.</span>
                     </p>
                   )}
                   <div>

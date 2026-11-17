@@ -7,9 +7,9 @@ Pulse is a fitness website that works like a personal trainer. It runs on your o
 - **Your profile.** Calculates your BMI, BMR, TDEE, daily calories and protein/carbs/fat.
 - **Workout plan.** Builds a weekly plan around your goal, your equipment and how many days you train. It gets harder or easier based on how your workouts feel.
 - **Workout Studio.** Guides you through every exercise:
-  1. **3D muscle model.** A real 3D human anatomy model, with the muscles the exercise works shown in red (primary) and orange (secondary). You can rotate it, zoom, see the front or back, and use X-ray mode to see deeper muscles.
+  1. **3D muscle model.** A realistic 3D human anatomy model (real muscle shapes, red muscle tissue with ivory tendons and bone). The muscles the exercise works glow **lime green** (primary) and **amber** (secondary). You can rotate it, zoom, see the front or back, and use X-ray mode to see deeper muscles.
   2. **Explanation.** What the exercise does, why it helps, correct posture and common mistakes.
-  3. **Video demonstration.** Plays the exercise video (see "Exercise videos" below).
+  3. **Video demonstration.** Plays the trainer video in a large player with slow-motion (0.5×, 0.75×), loop and fullscreen (see "Exercise videos" below).
   4. **Start.** Choose Rep mode or Timer mode, then train with set tracking, rest countdowns, pause/resume, skip and next.
 - **Nutrition.** Malaysian-friendly meal plans, a food log and calorie/protein tracking.
 - **Progress.** Charts for weight, BMI, workouts, calories and protein.
@@ -23,7 +23,7 @@ Pulse is a fitness website that works like a personal trainer. It runs on your o
 | Exercise intro (muscles → explanation → video → start) | ✅ Working |
 | Workout tracking (sets, reps, timer, rest, pause, skip) | ✅ Working |
 | Exercise video library (upload, play, replace, delete) | ✅ Working |
-| Realistic trainer videos for each exercise | ⚠️ **Not included.** You add them (free options below). Until then, each exercise shows an *animated motion guide*, and the app tells you so. |
+| Realistic trainer videos for each exercise | ⚠️ **Not included — you need to add them** (free options below). Until you do, the workout screen shows the realistic 3D muscle model instead, with a clear "No demonstration video yet" label. There is no stick figure or fake video anywhere. |
 | Automatic AI video generation inside the app | ❌ Not built. Every AI video service with an API costs money, and you asked for no paid services. The app gives you ready-made prompts and an upload page instead. |
 | AI Coach | ✅ Works once you install Ollama (free) or add a paid Claude key |
 
@@ -194,7 +194,7 @@ A free web app **does not** mean a free API, so none of the paid APIs are connec
 4. Open **Video library** in the app and watch each clip. If one is wrong:
    - `npm run videos -- --list push-up` shows other choices,
    - `npm run videos -- --pick push-up=1234567` uses a specific one (the number from the list),
-   - `npm run videos -- --remove push-up` goes back to the animated guide.
+   - `npm run videos -- --remove push-up` removes it again.
 
 ### Option B: AI-generated trainer videos (free with Wan 2.2, if you have an NVIDIA GPU)
 
@@ -214,6 +214,8 @@ Record each exercise from a 45° front-side angle, full body in frame. Upload as
 ---
 
 ## The 3D anatomy model
+
+Exercise cards show a still image of the same 3D model (in `public/anatomy-thumbs/`). They're rendered from the model by `npm run anatomy:thumbs` (needs the dev server running and Playwright installed with `npx playwright install chromium`). You only need to re-run it if you change which muscles an exercise targets.
 
 `public/models/anatomy.glb` contains 246 real muscles and the main bones. It comes from **Z-Anatomy**, which is based on **BodyParts3D** (Database Center for Life Science, Japan). It is licensed **CC BY-SA 4.0**, so the attribution is shown on the model and in `public/models/ANATOMY-LICENSE.txt`. If you share or change the model file itself, keep that licence and credit.
 

@@ -4,7 +4,7 @@
  *      Video Library page, AI clips you generated, or clips fetched with `npm run videos`.
  *   2. Built-in entries committed in video-manifest.json (e.g. licensed CDN clips or embeds).
  *   3. A CDN convention: NEXT_PUBLIC_VIDEO_BASE_URL/<slug>.mp4
- *   4. The animated motion guide (always available, drawn in the browser).
+ *   4. Nothing: the UI then shows the 3D anatomy model and says no video has been added yet.
  * Adding or replacing a video never needs a code change or a rebuild.
  */
 import builtIn from "./video-manifest.json";
@@ -28,7 +28,7 @@ export interface VideoEntry {
 
 export type ManifestEntry = VideoEntry | { kind: "embed"; provider: "youtube" | "vimeo"; id: string; credit?: string; license?: string };
 export type VideoLibrary = Record<string, ManifestEntry>;
-export type ExerciseMedia = ManifestEntry | { kind: "motion" };
+export type ExerciseMedia = ManifestEntry | { kind: "none" };
 
 export const BUILT_IN = builtIn as VideoLibrary;
 
@@ -45,7 +45,7 @@ export function resolveMedia(slug: string, library: VideoLibrary = {}): Exercise
       ],
     };
   }
-  return { kind: "motion" };
+  return { kind: "none" };
 }
 
 export function embedUrl(e: Extract<ManifestEntry, { kind: "embed" }>): string {

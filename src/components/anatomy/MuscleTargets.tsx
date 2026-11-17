@@ -3,8 +3,8 @@ import { MUSCLES, type ExerciseTargets } from "@/lib/anatomy/muscles";
 /** Text list of primary / secondary muscles with plain-language explanations. */
 export function MuscleTargets({ targets, dense = false }: { targets: ExerciseTargets; dense?: boolean }) {
   const groups = [
-    { label: targets.stretch ? "Muscles being stretched" : "Primary muscles", color: "#ff3b30", ids: targets.primary },
-    { label: "Secondary muscles", color: "#ff9f0a", ids: targets.secondary },
+    { label: targets.stretch ? "Muscles being stretched" : "Primary muscles", color: "#b8ff2e", ids: targets.primary },
+    { label: "Secondary muscles", color: "#ffb020", ids: targets.secondary },
   ].filter((g) => g.ids.length);
   return (
     <div className="space-y-5">

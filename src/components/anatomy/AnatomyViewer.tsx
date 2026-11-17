@@ -5,17 +5,37 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { Loader2, RotateCcw, ScanSearch, Info } from "lucide-react";
 import { MUSCLES, highlightMap, preferredView, type ExerciseTargets } from "@/lib/anatomy/muscles";
 import { cx } from "../ui";
 
 const MODEL_URL = "/models/anatomy.glb";
 
-// Colours: neutral muscles stay grey; primary = red, secondary = orange.
-const NEUTRAL = new THREE.Color("#4b4b55");
-const BONE = new THREE.Color("#cdc6b6");
-const PRIMARY = new THREE.Color("#ff3b30");
-const SECONDARY = new THREE.Color("#ff9f0a");
+// Realistic anatomy palette: red-brown muscle, ivory tendon and bone.
+// Target muscles glow lime (primary) and amber (secondary).
+const MUSCLE = new THREE.Color("#8e2e22");
+const MUSCLE_DARK = new THREE.Color("#6a1d14");
+const MUSCLE_LIGHT = new THREE.Color("#a5402f");
+const TENDON = new THREE.Color("#b8a991");
+const BONE = new THREE.Color("#b9ad98");
+export const PRIMARY_HEX = "#b8ff2e";
+export const SECONDARY_HEX = "#ffb020";
+const PRIMARY = new THREE.Color("#66bf00");
+const SECONDARY = new THREE.Color("#d98400");
+const TENDON_RE = /tendon|tract|septum|aponeuros|tendinous|ring|arch|trochlea|tarsus/i;
+
+/** Small, stable per-muscle colour variation so neighbouring muscles read as separate. */
+function muscleTone(name: string): THREE.Color {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  const t = (h % 1000) / 1000;
+  return t < 0.5 ? MUSCLE.clone().lerp(MUSCLE_DARK, (0.5 - t) * 0.9) : MUSCLE.clone().lerp(MUSCLE_LIGHT, (t - 0.5) * 0.9);
+}
 
 let modelPromise: Promise<THREE.Group> | null = null;
 function loadModel(): Promise<THREE.Group> {
@@ -36,12 +56,12 @@ function groupFor(base: string) {
 
 interface Tip { x: number; y: number; title: string; sub: string; level: 0 | 1 | 2 }
 
-export function AnatomyViewer({ targets, className, compact = false }: { targets: ExerciseTargets; className?: string; compact?: boolean }) {
+export function AnatomyViewer({ targets, className, compact = false, bare = false, interactive = true, initialView, autoFocus = false }: { targets: ExerciseTargets; className?: string; compact?: boolean; bare?: boolean; interactive?: boolean; initialView?: "front" | "back"; autoFocus?: boolean }) {
   const host = useRef<HTMLDivElement>(null);
   const api = useRef<{ setView: (v: "front" | "back") => void; focus: () => void; reset: () => void; xray: (on: boolean) => void } | null>(null);
   const [xray, setXray] = useState(false);
   const [status, setStatus] = useState<"loading" | "ready" | "error" | "nowebgl">("loading");
-  const [view, setView] = useState<"front" | "back">(() => preferredView(targets));
+  const [view, setView] = useState<"front" | "back">(() => initialView ?? preferredView(targets));
   const [tip, setTip] = useState<Tip | null>(null);
   const key = targets.primary.join(",") + "|" + targets.secondary.join(",");
 
@@ -52,7 +72,7 @@ export function AnatomyViewer({ targets, className, compact = false }: { targets
     setXray(false);
     let renderer: THREE.WebGLRenderer;
     try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     } catch {
       setStatus("nowebgl");
       return;
@@ -63,23 +83,37 @@ export function AnatomyViewer({ targets, className, compact = false }: { targets
     el.appendChild(renderer.domElement);
     renderer.domElement.style.touchAction = "none";
 
+    renderer.toneMappingExposure = 0.85;
     const scene = new THREE.Scene();
+    scene.background = new THREE.Color("#0b0b0d");
+    // Soft studio reflections give the wet, glossy look of real muscle tissue.
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environment = envTex;
     const camera = new THREE.PerspectiveCamera(28, 1, 0.01, 50);
-    scene.add(new THREE.HemisphereLight("#dfe8ff", "#1a1410", 1.1));
+    scene.add(new THREE.HemisphereLight("#fff3ea", "#1a1014", 0.25));
     // Lights ride with the camera so the front and back views are lit equally.
     scene.add(camera);
-    const keyLight = new THREE.DirectionalLight("#ffffff", 2.4); keyLight.position.set(1.2, 1.6, 0.4); camera.add(keyLight); keyLight.target.position.set(0, 0, -1); camera.add(keyLight.target);
-    const fill = new THREE.DirectionalLight("#9ec9ff", 0.7); fill.position.set(-1.5, 0.2, 0.3); camera.add(fill); fill.target.position.set(0, 0, -1); camera.add(fill.target);
-    const rim = new THREE.DirectionalLight("#ffffff", 0.6); rim.position.set(0, 2, -3); scene.add(rim);
+    const keyLight = new THREE.DirectionalLight("#fff6ee", 1.7); keyLight.position.set(1.2, 1.6, 0.4); camera.add(keyLight); keyLight.target.position.set(0, 0, -1); camera.add(keyLight.target);
+    const fill = new THREE.DirectionalLight("#bcd6ff", 0.35); fill.position.set(-1.5, 0.2, 0.3); camera.add(fill); fill.target.position.set(0, 0, -1); camera.add(fill.target);
+    const rim = new THREE.DirectionalLight("#9fc4ff", 1.1); rim.position.set(0, 1.2, -2.5); camera.add(rim); rim.target.position.set(0, 0, -1); camera.add(rim.target);
+
+    // Bloom makes only the bright, emissive (highlighted) muscles glow.
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.32, 0.3, 0.9);
+    composer.addPass(bloom);
+    composer.addPass(new OutputPass());
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
     controls.enablePan = true;
     controls.rotateSpeed = 0.7;
+    controls.enabled = interactive;
 
     const levels = highlightMap(targets);
-    const animated: { mat: THREE.MeshStandardMaterial; target: THREE.Color; emissive: THREE.Color; level: 0 | 1 | 2 }[] = [];
+    const animated: { mat: THREE.MeshPhysicalMaterial; base: THREE.Color; target: THREE.Color; emissive: THREE.Color; level: 0 | 1 | 2 }[] = [];
     const pickables: THREE.Mesh[] = [];
     let center = new THREE.Vector3();
     let fullDist = 4;
@@ -91,6 +125,8 @@ export function AnatomyViewer({ targets, className, compact = false }: { targets
     const fit = () => {
       const w = el.clientWidth, h = el.clientHeight;
       renderer.setSize(w, h, false);
+      composer.setSize(w, h);
+      composer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.domElement.style.width = "100%";
       renderer.domElement.style.height = "100%";
       camera.aspect = w / Math.max(1, h);
@@ -116,16 +152,24 @@ export function AnatomyViewer({ targets, className, compact = false }: { targets
           const isBone = anat.startsWith("BONE_");
           const base = isBone ? "" : meshBase(anat);
           const level = isBone ? 0 : (levels.get(base) ?? 0);
-          const mat = new THREE.MeshStandardMaterial({
-            color: isBone ? BONE : NEUTRAL,
-            roughness: isBone ? 0.85 : 0.55,
-            metalness: 0.05,
+          const isTendon = !isBone && TENDON_RE.test(base);
+          const baseColor = isBone ? BONE : isTendon ? TENDON : muscleTone(base);
+          const mat = new THREE.MeshPhysicalMaterial({
+            color: baseColor.clone(),
+            roughness: isBone ? 0.6 : isTendon ? 0.35 : 0.42,
+            metalness: 0,
+            clearcoat: isBone ? 0.05 : level > 0 ? 0.08 : 0.3,
+            clearcoatRoughness: 0.35,
+            sheen: isBone || level > 0 ? 0 : 0.25,
+            sheenColor: new THREE.Color("#ff9d8a"),
+            sheenRoughness: 0.5,
+            envMapIntensity: level > 0 ? 0.1 : 0.22,
             emissive: new THREE.Color("#000000"),
           });
           mesh.material = mat;
           mesh.userData = { base, level, isBone };
           if (!isBone) {
-            animated.push({ mat, target: level === 2 ? PRIMARY : level === 1 ? SECONDARY : NEUTRAL, emissive: level === 2 ? PRIMARY : level === 1 ? SECONDARY : new THREE.Color("#000"), level });
+            animated.push({ mat, base: baseColor, target: level === 2 ? PRIMARY : level === 1 ? SECONDARY : baseColor, emissive: level === 2 ? PRIMARY : level === 1 ? SECONDARY : new THREE.Color("#000"), level });
             pickables.push(mesh);
           }
         });
@@ -143,7 +187,7 @@ export function AnatomyViewer({ targets, className, compact = false }: { targets
           focusBox = new THREE.Box3();
           hot.forEach((m) => focusBox!.expandByObject(m));
         }
-        const v = preferredView(targets);
+        const v = initialView ?? preferredView(targets);
         camera.position.copy(viewPos(v));
         controls.target.copy(center);
         controls.update();
@@ -163,9 +207,10 @@ export function AnatomyViewer({ targets, className, compact = false }: { targets
             const s = focusBox.getSize(new THREE.Vector3());
             const d = Math.max(s.y, s.x * 0.8, 0.3) / 2 / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 2.3;
             const dir = camera.position.clone().sub(controls.target).normalize();
-            moveTo(c.clone().add(dir.multiplyScalar(d)), c);
+            moveTo(c.clone().add(dir.multiplyScalar(d)), c, autoFocus ? 1 : 900);
           },
         };
+        if (autoFocus) api.current.focus();
         setStatus("ready");
       })
       .catch(() => !disposed && setStatus("error"));
@@ -213,11 +258,11 @@ export function AnatomyViewer({ targets, className, compact = false }: { targets
       const pulse = 0.5 + 0.5 * Math.sin(now / 420);
       for (const a of animated) {
         if (a.level === 0) continue;
-        tmp.copy(NEUTRAL).lerp(a.target, intro);
+        tmp.copy(a.base).lerp(a.target, intro);
         a.mat.color.copy(tmp);
-        a.mat.emissive.copy(a.emissive).multiplyScalar(intro * (a.level === 2 ? 0.28 + pulse * 0.22 : 0.18));
+        a.mat.emissive.copy(a.emissive).multiplyScalar(intro * (a.level === 2 ? 0.16 + pulse * 0.14 : 0.08));
       }
-      renderer.render(scene, camera);
+      composer.render();
     };
     raf = requestAnimationFrame(loop);
 
@@ -227,6 +272,9 @@ export function AnatomyViewer({ targets, className, compact = false }: { targets
       ro.disconnect();
       io.disconnect();
       controls.dispose();
+      composer.dispose();
+      envTex.dispose();
+      pmrem.dispose();
       animated.forEach((a) => a.mat.dispose());
       scene.traverse((o) => { const m = (o as THREE.Mesh).material as THREE.Material | undefined; if (m && "dispose" in m) m.dispose(); });
       renderer.dispose();
@@ -241,9 +289,10 @@ export function AnatomyViewer({ targets, className, compact = false }: { targets
 
   return (
     <div className={cx("relative overflow-hidden rounded-[1.5rem] border border-line bg-[radial-gradient(ellipse_at_50%_30%,#1b1c1f,#070708_70%)]", className)}>
-      <div ref={host} className="absolute inset-0 cursor-grab active:cursor-grabbing" aria-label="Interactive 3D muscle model. Drag to rotate, scroll or pinch to zoom." role="img" />
+      <div ref={host} data-ready={status === "ready" ? "1" : undefined} className={cx("absolute inset-0", interactive && "cursor-grab active:cursor-grabbing")} aria-label="Interactive 3D muscle model. Drag to rotate, scroll or pinch to zoom." role="img" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_35%,transparent_45%,rgba(0,0,0,0.55)_100%)]" />
 
-      {status === "loading" && (
+      {status === "loading" && !bare && (
         <div className="absolute inset-0 grid place-items-center text-sm text-dim"><span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Loading 3D anatomy…</span></div>
       )}
       {(status === "error" || status === "nowebgl") && (
@@ -255,14 +304,14 @@ export function AnatomyViewer({ targets, className, compact = false }: { targets
       {tip && (
         <div className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[130%] rounded-xl border border-line-strong bg-raised/95 px-3 py-2 text-xs shadow-xl backdrop-blur" style={{ left: tip.x, top: tip.y }}>
           <p className="flex items-center gap-1.5 font-semibold text-fg">
-            {tip.level > 0 && <span className="h-2 w-2 rounded-full" style={{ background: tip.level === 2 ? "#ff3b30" : "#ff9f0a" }} />}
+            {tip.level > 0 && <span className="h-2 w-2 rounded-full" style={{ background: tip.level === 2 ? "#b8ff2e" : "#ffb020" }} />}
             {tip.title}
           </p>
           {tip.sub && <p className="text-mute">{tip.sub}</p>}
         </div>
       )}
 
-      {status === "ready" && (
+      {status === "ready" && !bare && (
         <>
           <div className="absolute left-3 top-3 flex rounded-full border border-line bg-black/50 p-0.5 backdrop-blur">
             {(["front", "back"] as const).map((v) => (
@@ -271,13 +320,13 @@ export function AnatomyViewer({ targets, className, compact = false }: { targets
           </div>
           <div className="absolute right-3 top-3 flex gap-1.5">
             {targets.primary.length > 0 && <button onClick={() => api.current?.focus()} className="inline-flex items-center gap-1.5 rounded-full border border-line bg-black/50 px-3 py-1.5 text-xs font-semibold text-fg backdrop-blur hover:border-line-strong"><ScanSearch className="h-3.5 w-3.5" /><span className="hidden sm:inline">Zoom to muscles</span></button>}
-            <button onClick={() => { const n = !xray; setXray(n); api.current?.xray(n); }} aria-pressed={xray} className={cx("rounded-full border px-3 py-1.5 text-xs font-semibold backdrop-blur", xray ? "border-[#ff9f0a]/60 bg-[#ff9f0a]/15 text-[#ffc46b]" : "border-line bg-black/50 text-dim hover:text-fg")} title="See deep muscles through the outer layer">X-ray</button>
+            <button onClick={() => { const n = !xray; setXray(n); api.current?.xray(n); }} aria-pressed={xray} className={cx("rounded-full border px-3 py-1.5 text-xs font-semibold backdrop-blur", xray ? "border-[#ffb020]/60 bg-[#ffb020]/15 text-[#ffd27a]" : "border-line bg-black/50 text-dim hover:text-fg")} title="See deep muscles through the outer layer">X-ray</button>
             <button onClick={() => { setView(preferredView(targets)); api.current?.reset(); }} className="grid h-8 w-8 place-items-center rounded-full border border-line bg-black/50 text-dim backdrop-blur hover:text-fg" aria-label="Reset view"><RotateCcw className="h-3.5 w-3.5" /></button>
           </div>
           {!compact && (
             <div className="absolute bottom-3 left-3 flex flex-wrap items-center gap-3 rounded-full border border-line bg-black/50 px-3 py-1.5 text-[11px] text-dim backdrop-blur">
-              <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#ff3b30]" /> {targets.stretch ? "Stretched" : "Primary"}</span>
-              <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#ff9f0a]" /> Secondary</span>
+              <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#b8ff2e]" /> {targets.stretch ? "Stretched" : "Primary"}</span>
+              <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#ffb020]" /> Secondary</span>
               <span className="hidden items-center gap-1 sm:inline-flex"><Info className="h-3 w-3" /> Drag to rotate · scroll to zoom</span>
             </div>
           )}
