@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/server/auth";
 import { getChat, today } from "@/lib/server/data";
 import { CoachChat } from "@/components/CoachChat";
+import { coachProvider, coachProviderLabel } from "@/lib/server/ai";
 
 export const metadata = { title: "AI Coach" };
 
@@ -14,7 +15,7 @@ export default async function CoachPage() {
         <h1 className="mt-1 font-display text-3xl font-bold tracking-tight">Your coach</h1>
       </div>
       <CoachChat
-        thread="coach" date={today()} configured={!!(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN)}
+        thread="coach" date={today()} configured={coachProvider() !== null} providerLabel={coachProviderLabel(coachProvider())}
         initial={chat.map((c) => ({ role: c.role as "user" | "assistant", content: c.content }))}
         suggestions={["What workout should I do today?", "How can I build bigger arms?", "How much protein should I eat?", "Is my current plan effective?", "How do I lose fat but keep muscle?"]}
       />

@@ -4,6 +4,7 @@ import { computeTargets } from "@/lib/fitness/calc";
 import { allowedFoods } from "@/lib/nutrition/planner";
 import { NutritionView } from "@/components/NutritionView";
 import { CoachChat } from "@/components/CoachChat";
+import { coachProvider, coachProviderLabel } from "@/lib/server/ai";
 import { PageHeader } from "@/components/ui";
 import { DIET_LABELS } from "@/lib/fitness/types";
 
@@ -31,7 +32,7 @@ export default async function NutritionPage({ searchParams }: { searchParams: Pr
       />
       <div className="mt-8">
         <CoachChat
-          compact thread="nutrition" date={date} configured={!!(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN)}
+          compact thread="nutrition" date={date} configured={coachProvider() !== null} providerLabel={coachProviderLabel(coachProvider())}
           initial={chat.map((c) => ({ role: c.role as "user" | "assistant", content: c.content }))}
           suggestions={["What should I eat for dinner with my remaining calories?", "Is nasi lemak okay on my plan?", "High-protein mamak options?", "What should I eat after my workout?"]}
         />

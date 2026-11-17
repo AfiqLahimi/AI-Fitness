@@ -8,8 +8,8 @@ import { cx } from "./ui";
 export interface ChatMsg { role: "user" | "assistant"; content: string }
 
 export function CoachChat({
-  thread, initial, suggestions, date, configured, compact = false,
-}: { thread: "coach" | "nutrition"; initial: ChatMsg[]; suggestions: string[]; date: string; configured: boolean; compact?: boolean }) {
+  thread, initial, suggestions, date, configured, providerLabel = "", compact = false,
+}: { thread: "coach" | "nutrition"; initial: ChatMsg[]; suggestions: string[]; date: string; configured: boolean; providerLabel?: string; compact?: boolean }) {
   const [msgs, setMsgs] = useState<ChatMsg[]>(initial);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -57,7 +57,7 @@ export function CoachChat({
           <span className="grid h-8 w-8 place-items-center rounded-xl bg-lime/15 text-lime"><Sparkles className="h-4 w-4" /></span>
           <div>
             <p className="text-sm font-semibold">{thread === "coach" ? "Pulse Coach" : "Nutrition Coach"}</p>
-            <p className="text-[11px] text-mute">Uses your profile, plan, workouts and food log · powered by Claude</p>
+            <p className="text-[11px] text-mute">Uses your profile, plan, workouts and food log{configured ? ` · ${providerLabel}` : ""}</p>
           </div>
         </div>
         {msgs.length > 0 && (
@@ -68,7 +68,7 @@ export function CoachChat({
       <div ref={scroller} className="flex-1 space-y-4 overflow-y-auto px-5 py-5" aria-live="polite">
         {!configured && (
           <div className="rounded-xl border border-amber/30 bg-amber/10 p-4 text-sm text-amber">
-            The AI coach isn&apos;t configured on this server yet. Add an <code className="rounded bg-black/30 px-1">ANTHROPIC_API_KEY</code> to the environment to enable live coaching. Everything else in Pulse works without it.
+            The AI coach isn&apos;t set up yet. For a free coach, install Ollama, run <code className="rounded bg-black/30 px-1">ollama pull qwen2.5:7b</code> and set <code className="rounded bg-black/30 px-1">OLLAMA_MODEL=qwen2.5:7b</code> in <code className="rounded bg-black/30 px-1">.env.local</code>. Everything else in Pulse works without it.
           </div>
         )}
         {msgs.length === 0 && (

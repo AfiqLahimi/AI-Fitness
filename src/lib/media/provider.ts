@@ -9,7 +9,7 @@
 import manifest from "./video-manifest.json";
 
 export type ManifestEntry =
-  | { kind: "video"; sources: { src: string; type: string }[]; poster?: string; credit?: string; license?: string; aiGenerated?: boolean }
+  | { kind: "video"; sources: { src: string; type: string }[]; poster?: string; credit?: string; license?: string; sourceUrl?: string; aiGenerated?: boolean }
   | { kind: "embed"; provider: "youtube" | "vimeo"; id: string; credit?: string; license?: string };
 
 export type ExerciseMedia = ManifestEntry | { kind: "motion" };
