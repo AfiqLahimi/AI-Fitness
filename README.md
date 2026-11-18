@@ -1,6 +1,6 @@
 # Pulse — AI Personal Fitness Trainer
 
-Pulse is a fitness website that works like a personal trainer. It runs on your own computer while you build it, and you open it in your web browser.
+Pulse is a fitness website that works like a personal trainer. You can run it **in the cloud on GitHub** (easiest, nothing to install, see "Run it on GitHub") or on your own computer.
 
 **What it can do**
 
@@ -26,6 +26,54 @@ Pulse is a fitness website that works like a personal trainer. It runs on your o
 | Realistic trainer videos for each exercise | ⚠️ **Not included — you need to add them** (free options below). Until you do, the workout screen shows the realistic 3D muscle model instead, with a clear "No demonstration video yet" label. There is no stick figure or fake video anywhere. |
 | Automatic AI video generation inside the app | ❌ Not built. Every AI video service with an API costs money, and you asked for no paid services. The app gives you ready-made prompts and an upload page instead. |
 | AI Coach | ✅ Works once you install Ollama (free) or add a paid Claude key |
+
+---
+
+## Run it on GitHub (no installing, no localhost)
+
+You can run Pulse entirely in your web browser with **GitHub Codespaces**, a computer in the cloud that GitHub gives you. Nothing is installed on your own computer.
+
+**Cost:** free GitHub accounts get about **60 hours per month** of Codespaces on the small 2-core machine. Stop the codespace when you finish, so you don't use up the hours (see below).
+
+1. Open <https://github.com/AfiqLahimi/ai-fitness> and sign in.
+2. Click the green **`<> Code`** button, then the **Codespaces** tab.
+3. Click **`...`** (three dots), then **New with options…**
+4. Under **Branch**, choose **`claude/pulse-fitness-app`**. Leave everything else as it is. Click **Create codespace**.
+   (Once this branch is merged into `main`, you can skip this step and just click **Create codespace on main**.)
+5. Wait 2–4 minutes. A VS Code editor opens in your browser and installs everything automatically. Then it runs `npm run dev` by itself in the terminal at the bottom.
+6. When the terminal says **Ready**, the website opens in a **new browser tab**. Its address looks like `https://something-3000.app.github.dev`.
+   - If no tab opens: click the **PORTS** tab at the bottom of the editor, find port **3000 (Pulse website)**, and click the 🌐 globe icon.
+   - If your browser blocked the pop-up, allow pop-ups for github.dev.
+7. Use the website as normal: **Get started**, then create an account, then **Start workout**.
+
+**Stop it (important, saves your free hours):** go to <https://github.com/codespaces>, click **`...`** next to your codespace, then **Stop codespace**. Closing the tab also stops it after 30 minutes of no activity.
+
+**Start it again later:** go to <https://github.com/codespaces> and click your codespace's name. Your account, workouts and uploaded videos are still there. If the website isn't running, type this in the terminal at the bottom and press Enter:
+
+```bash
+npm run dev
+```
+
+**Get my latest changes inside the codespace:** in the terminal, press **Ctrl + C** to stop the website, then run:
+
+```bash
+git pull
+```
+
+```bash
+npm install
+```
+
+```bash
+npm run dev
+```
+
+**Good to know**
+
+- The `…app.github.dev` address is **private** by default: only you, signed into GitHub, can open it. Codespaces can make a port public for sharing, but this is a development server, so don't use it as your real public website.
+- GitHub deletes a codespace after **30 days without use**, and its data (accounts, logs, uploaded videos) goes with it. Download any videos you want to keep.
+- The free AI coach (Ollama) needs more memory than the small codespace has. Use it on your own computer, or add a paid `ANTHROPIC_API_KEY` in `.env.local`.
+- A permanent public website (a URL that's always on) needs a hosting service plus an online database. Ask Claude when you're ready for that step.
 
 ---
 
